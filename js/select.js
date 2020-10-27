@@ -113,14 +113,9 @@
      */
     _handleOptionClick(e) {
       e.preventDefault();
-      let optionEl = $(e.target).closest('li')[0];
-      this._selectOption(optionEl);
-      e.stopPropagation();
-    }
-
-    _selectOption(optionEl) {
-      let key = optionEl.id;
-      if (!$(optionEl).hasClass('disabled') && !$(optionEl).hasClass('optgroup') && key.length) {
+      let option = $(e.target).closest('li')[0];
+      let key = option.id;
+      if (!$(option).hasClass('disabled') && !$(option).hasClass('optgroup') && key.length) {
         let selected = true;
 
         if (this.isMultiple) {
@@ -136,9 +131,7 @@
           $(this.dropdownOptions)
             .find('li')
             .removeClass('selected');
-          $(optionEl).toggleClass('selected', selected);
-          this._keysSelected = {};
-          this._keysSelected[optionEl.id] = true;
+          $(option).toggleClass('selected', selected);
         }
 
         // Set selected on original select option
@@ -150,9 +143,7 @@
         }
       }
 
-      if (!this.isMultiple) {
-        this.dropdown.close();
-      }
+      e.stopPropagation();
     }
 
     /**
@@ -172,10 +163,7 @@
       this.wrapper = document.createElement('div');
       $(this.wrapper).addClass('select-wrapper ' + this.options.classes);
       this.$el.before($(this.wrapper));
-      // Move actual select element into overflow hidden wrapper
-      let $hideSelect = $('<div class="hide-select"></div>');
-      $(this.wrapper).append($hideSelect);
-      $hideSelect[0].appendChild(this.el);
+      this.wrapper.appendChild(this.el);
 
       if (this.el.disabled) {
         this.wrapper.classList.add('disabled');
@@ -217,7 +205,7 @@
         });
       }
 
-      $(this.wrapper).append(this.dropdownOptions);
+      this.$el.after(this.dropdownOptions);
 
       // Add input dropdown
       this.input = document.createElement('input');
@@ -229,19 +217,18 @@
         $(this.input).prop('disabled', 'true');
       }
 
-      $(this.wrapper).prepend(this.input);
+      this.$el.before(this.input);
       this._setValueToInput();
 
       // Add caret
       let dropdownIcon = $(
         '<svg class="caret" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/><path d="M0 0h24v24H0z" fill="none"/></svg>'
       );
-      $(this.wrapper).prepend(dropdownIcon[0]);
+      this.$el.before(dropdownIcon[0]);
 
       // Initialize dropdown
       if (!this.el.disabled) {
         let dropdownOptions = $.extend({}, this.options.dropdownOptions);
-        let userOnOpenEnd = dropdownOptions.onOpenEnd;
 
         // Add callback for centering selected option when dropdown content is scrollable
         dropdownOptions.onOpenEnd = (el) => {
@@ -265,16 +252,11 @@
               this.dropdownOptions.scrollTop = scrollOffset;
             }
           }
-
-          // Handle user declared onOpenEnd if needed
-          if (userOnOpenEnd && typeof userOnOpenEnd === 'function') {
-            userOnOpenEnd.call(this.dropdown, this.el);
-          }
         };
 
-        // Prevent dropdown from closeing too early
-        dropdownOptions.closeOnClick = false;
-
+        if (this.isMultiple) {
+          dropdownOptions.closeOnClick = false;
+        }
         this.dropdown = M.Dropdown.init(this.input, dropdownOptions);
       }
 
